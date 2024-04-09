@@ -30,6 +30,10 @@
 		{
 			"name": "ansible-demo",
 			"path": "/projects/ansible-demo"
+		},
+		{
+			"name": "container-workshop",
+			"path": "/projects/container-workshop"
 		}
 	],
 	"extensions": {
@@ -37,6 +41,7 @@
 			"redhat.vscode-yaml",
 			"redhat.java",
 			"redhat.vscode-quarkus",
+			"redhat.fabric8-analytics",
 			"mhutchie.git-graph",
 			"eamodio.gitlens",
 			"streetsidesoftware.code-spell-checker",
@@ -49,6 +54,8 @@
 	"settings": {
 		"workbench.colorTheme": "Winter is Coming (Light)",
 		"workbench.preferredDarkColorTheme": "Winter is Coming (Dark Blue)",
-		"workbench.preferredLightColorTheme": "Winter is Coming (Light)"
+		"workbench.preferredLightColorTheme": "Winter is Coming (Light)",
+		"redHatDependencyAnalytics.vulnerabilityAlertSeverity": "Warning",
+		"redHatDependencyAnalytics.mvn.executable.path": "/usr/local/bin/mvn"
 	}
 }
