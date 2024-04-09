@@ -1,3 +1,29 @@
+# Notes
+
+NEXUS_CERT=$(openssl s_client -showcerts -connect ${LOCAL_REGISTRY} </dev/null 2>/dev/null|openssl x509 -outform PEM)
+
+oc create configmap nexus-registry -n openshift-config --from-literal=${LOCAL_REGISTRY//:/..}=${NEXUS_CERT}
+
+oc patch image.config.openshift.io/cluster --type=merge --patch '{"spec":{"additionalTrustedCA":{"name":"nexus-registry"}}}'                                         
+
+NEXUS_CERT=$(openssl s_client -showcerts -connect ${LOCAL_REGISTRY} </dev/null 2>/dev/null|openssl x509 -outform PEM | while read line; do echo "    $line"; done)
+
+cat << EOF | oc apply -n openshift-config -f -                                     
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: lab-ca
+data:
+  ca-bundle.crt: |
+    # Nexus Cert
+${NEXUS_CERT}
+
+EOF
+
+
+oc patch proxy cluster --type=merge --patch '{"spec":{"trustedCA":{"name":"lab-ca"}}}'
+
+
 cat <<EOF >$HOME/netpol/allow-same-namespace.yml
 ---
 kind: NetworkPolicy
