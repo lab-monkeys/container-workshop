@@ -67,3 +67,5 @@ spec:
     image: nexus.clg.lab:5001/clg/quarkus:new
 EOF
 ```
+
+oc new-app nexus.clg.lab:5001/clg/quarkus:new -n quarkus-app
