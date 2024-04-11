@@ -32,6 +32,12 @@
    podman run -d --rm --name quarkus -p 8080:8080 quarkus:test
    ```
 
+1. Shell into the container
+
+   ```bash
+   podman exec -it ctrID /bin/bash
+   ```
+
 1. Tag the container for Nexus
 
    ```bash
@@ -50,9 +56,17 @@
    podman push nexus.clg.lab:5001/clg/quarkus:new --tls-verify=false
    ```
 
+1. Inspect image metadata
+
+   ```bash
+   podman inspect nexus.clg.lab:5001/clg/quarkus:new
+   ```
+
 1. Create a Pod
 
+```bash
 oc new-project quarkus-app
+```
 
 ```bash
 cat << EOF | oc apply -f -
@@ -68,4 +82,62 @@ spec:
 EOF
 ```
 
+1. Create a deployment
+
+```bash
 oc new-app nexus.clg.lab:5001/clg/quarkus:new -n quarkus-app
+```
+
+## NetworkPolicy
+
+```bash
+cat <<EOF | oc apply -f -
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-my-stuff
+  namespace: quarkus-app
+spec:
+  podSelector: {}
+  ingress:
+  - from:
+    - podSelector: {}
+EOF
+```
+
+```bash
+cat <<EOF | oc apply -f -
+kind: NetworkPolicy
+apiVersion: networking.k8s.io/v1
+metadata:
+  name: allow-my-workspace
+  namespace: quarkus-app
+spec:
+  podSelector:
+    matchLabels:
+      name: quarkus-demo
+  ingress:
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            project: cgruver-devspaces
+EOF
+```
+
+```bash
+cat <<EOF | oc apply -f -
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-openshift-ingress
+spec:
+  policyTypes:
+  - Ingress
+  podSelector: {}
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          network.openshift.io/policy-group: ingress
+EOF
+```

@@ -1,5 +1,8 @@
 # Notes
 
+Add Nexus cert to new cluster
+
+```bash
 NEXUS_CERT=$(openssl s_client -showcerts -connect ${LOCAL_REGISTRY} </dev/null 2>/dev/null|openssl x509 -outform PEM)
 
 oc create configmap nexus-registry -n openshift-config --from-literal=${LOCAL_REGISTRY//:/..}=${NEXUS_CERT}
@@ -22,6 +25,39 @@ EOF
 
 
 oc patch proxy cluster --type=merge --patch '{"spec":{"trustedCA":{"name":"lab-ca"}}}'
+```
+
+## Cut off internet access for cluster
+
+```bash
+new_rule=$(ssh root@router.clg.lab "uci add firewall rule")
+ssh root@router.clg.lab "uci set firewall.${new_rule}.enabled=1 ; \
+    uci set firewall.${new_rule}.target=REJECT ; \
+    uci set firewall.${new_rule}.src=lan ; \
+    uci set firewall.${new_rule}.dest=wan ; \
+    uci set firewall.${new_rule}.name=${CLUSTER_NAME}-internet-deny ; \
+    uci set firewall.${new_rule}.proto=all ; \
+    uci set firewall.${new_rule}.family=ipv4"
+let node_count=$(yq e ".control-plane.nodes" ${CLUSTER_CONFIG} | yq e 'length' -)
+let node_index=0
+while [[ node_index -lt ${node_count} ]]
+do
+  node_ip=$(yq e ".control-plane.nodes.[${node_index}].ip-addr" ${CLUSTER_CONFIG})
+  ssh root@router.clg.lab "uci add_list firewall.${new_rule}.src_ip=\"${node_ip}\""
+  node_index=$(( ${node_index} + 1 ))
+done
+let node_count=$(yq e ".compute-nodes" ${CLUSTER_CONFIG} | yq e 'length' -)
+let node_index=0
+while [[ node_index -lt ${node_count} ]]
+do
+  node_ip=$(yq e ".compute-nodes.[${node_index}].ip-addr" ${CLUSTER_CONFIG})
+  ssh root@router.clg.lab "uci add_list firewall.${new_rule}.src_ip=\"${node_ip}\""
+  node_index=$(( ${node_index} + 1 ))
+done
+ssh root@router.clg.lab "uci commit firewall && /etc/init.d/firewall restart"
+```
+
+
 
 
 cat <<EOF >$HOME/netpol/allow-same-namespace.yml
